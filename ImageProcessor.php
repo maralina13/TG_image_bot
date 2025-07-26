@@ -65,33 +65,41 @@ class ImageProcessor
     }
 
     public static function convertFormat(string $path, string $format): string {
-        $ext = strtolower($format);
-        $output = tempnam("storage", "converted_") . '.' . $ext;
+    $src = imagecreatefromstring(file_get_contents($path));
+    $ext = strtolower($format);
+    $output = tempnam("storage", "converted_") . '.' . $ext;
 
-        if ($ext === 'tiff') {
-            // Используем ImageMagick
-            exec("magick " . escapeshellarg($path) . " " . escapeshellarg($output));
-            return $output;
-        }
+    switch ($ext) {
+        case 'png':
+            imagepng($src, $output);
+            break;
+        case 'jpg':
+        case 'jpeg':
+            imagejpeg($src, $output);
+            break;
+        case 'tiff':
+            $converted = false;
+            if (shell_exec("which convert")) {
+                exec("convert $path $output", $outputLog, $returnCode);
+                if (file_exists($output) && $returnCode === 0) {
+                    $converted = true;
+                }
+            }
 
-        $src = imagecreatefromstring(file_get_contents($path));
-
-        switch ($ext) {
-            case 'png':
-                imagepng($src, $output);
-                break;
-            case 'jpg':
-            case 'jpeg':
-                imagejpeg($src, $output);
-                break;
-            default:
+            if (!$converted) {
                 imagedestroy($src);
-                throw new Exception("Unsupported format");
-        }
-
-        imagedestroy($src);
-        return $output;
+                throw new Exception("Конвертация в TIFF невозможна: ImageMagick не установлена на сервере.");
+            }
+            break;
+        default:
+            imagedestroy($src);
+            throw new Exception("Неподдерживаемый формат");
     }
+
+    imagedestroy($src);
+    return $output;
+    }
+
 
     public static function isImageFile(string $mime): bool {
         return in_array($mime, ['image/jpeg', 'image/png', 'image/tiff']);
