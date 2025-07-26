@@ -186,15 +186,22 @@ if (isset($update['callback_query'])) {
                 'chat_id' => $chatId,
                 'text' => "⏳ Преобразование в формат $format..."
             ]);
-            $newPath = ImageProcessor::convertFormat($imagePath, $format);
-            file_put_contents("storage/current_step_$chatId.txt", 'result_shown');
-            $telegram->sendDocument([
-                'chat_id' => $chatId,
-                'document' => fopen($newPath, 'r'),
-                'reply_markup' => buildMenu([
-                    [['text' => '🔙 Назад', 'callback_data' => 'back_main']]
-                ])
-            ]);
+            try {
+                $newPath = ImageProcessor::convertFormat($imagePath, $format);
+                file_put_contents("storage/current_step_$chatId.txt", 'result_shown');
+                $telegram->sendDocument([
+                    'chat_id' => $chatId,
+                    'document' => fopen($newPath, 'r'),
+                    'reply_markup' => buildMenu([
+                        [['text' => '🔙 Назад', 'callback_data' => 'back_main']]
+                    ])
+                ]);
+            } catch (Exception $e) {
+                $telegram->sendMessage([
+                    'chat_id' => $chatId,
+                    'text' => "⚠️ Ошибка: " . $e->getMessage()
+                ]);
+            }
             break;
 
         case 'back_main':
