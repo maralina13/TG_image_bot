@@ -3,9 +3,10 @@ FROM php:8.2-cli
 
 # Установка зависимостей
 RUN apt-get update && apt-get install -y \
-    git unzip libpng-dev libjpeg-dev libwebp-dev libfreetype6-dev imagemagick \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
-    && docker-php-ext-install gd
+    libjpeg-dev libpng-dev libfreetype6-dev libwebp-dev \
+    libtiff-dev libmagickwand-dev imagemagick unzip git curl && \
+    docker-php-ext-configure gd --with-jpeg --with-freetype --with-webp && \
+    docker-php-ext-install gd
 
 # Установка Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -15,6 +16,6 @@ WORKDIR /app
 COPY . .
 
 # Установка PHP-зависимостей
-RUN composer install --no-dev --optimize-autoloader
+RUN composer install 
 
-CMD ["php", "index.php"]
+CMD ["php", "-S", "0.0.0.0:8000", "index.php"]
